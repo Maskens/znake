@@ -1,0 +1,2 @@
+* Wrap snake around screen DONE
+* Make food of map
