@@ -54,7 +54,11 @@ pub const Player = struct {
 
     pub fn draw(self: *Player) void {
         for(self.bodyAlloc.items) |part| {
-            rl.drawRectangleV(part.position, Vector2 {.x = 16, .y = 16}, .lime);
+            rl.drawRectangleV(
+                part.position, 
+                Vector2 {.x = global.gridSize, .y = global.gridSize}, 
+                .lime
+            );
         }
     }
 };
@@ -62,26 +66,26 @@ pub const Player = struct {
 fn initBody(body: *ArrayList(Part)) !void {
     try body.append(Part {
         .position = Vector2 {
-            .x = 16,
-            .y = 16
+            .x = global.gridSize,
+            .y = global.gridSize
         }
     });
     try body.append(Part {
         .position = Vector2 {
-            .x = 32,
-            .y = 16
+            .x = global.gridSize * 2,
+            .y = global.gridSize
         }
     });
     try body.append(Part {
         .position = Vector2 {
-            .x = 48,
-            .y = 16
+            .x = global.gridSize * 3,
+            .y = global.gridSize
         }
     });
     try body.append(Part {
         .position = Vector2 {
-            .x = 48 + 16,
-            .y = 16
+            .x = global.gridSize * 4,
+            .y = global.gridSize
         }
     });
 }

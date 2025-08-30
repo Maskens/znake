@@ -1,6 +1,7 @@
 const rl = @import("raylib");
 const Direction = @import("global.zig").Direction;
 const Player = @import("snake.zig").Player;
+const FoodGen = @import("food_gen.zig").FoodGen;
 const global = @import("global.zig");
 
 const Vector2 = rl.Vector2;
@@ -13,9 +14,8 @@ pub fn main() !void {
     rl.setConfigFlags(rl.ConfigFlags { .window_resizable = true, .window_highdpi = true, .fullscreen_mode = false});
 
     var player = try Player.init(alloc);
+    var foodGen = try FoodGen.init(alloc);
     defer player.deInit();
-
-    const stepSize = 16;
 
     // Timing vars
     const moveRateInSeconds = 0.2; 
@@ -26,9 +26,13 @@ pub fn main() !void {
 
     rl.setTargetFPS(60);
 
+    const stepSize = global.gridSize;
+
     while(!rl.windowShouldClose()) {
+        // Input
         handleInput(&player);
 
+        // Logic
         if (rl.getTime() > nextMoveTime) {
             switch (player.direction) {
                 .down => player.move(Vector2{.y = stepSize, .x = 0}),
@@ -39,6 +43,11 @@ pub fn main() !void {
             nextMoveTime = rl.getTime() + moveRateInSeconds;
         }
 
+        if(foodGen.shouldGenFood()) {
+            try foodGen.generateFood();
+        }
+
+        // Drawing
         rl.beginDrawing();
         defer rl.endDrawing();
 
@@ -47,6 +56,7 @@ pub fn main() !void {
         rl.drawText("Snake?!", global.screenWidth / 3, global.screenHeight / 2, 20, .white);
 
         player.draw();
+        foodGen.draw();
 
         // rl.drawRectangleV(player.body[0].position, partSize, .lime);
     }
