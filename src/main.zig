@@ -11,15 +11,17 @@ const lib = @import("mange_lib");
 
 pub fn main() !void {
     const alloc: std.mem.Allocator = std.heap.page_allocator;
-    rl.setConfigFlags(rl.ConfigFlags { .window_resizable = true, .window_highdpi = true, .fullscreen_mode = false});
+
+    rl.setConfigFlags(rl.ConfigFlags { 
+        .window_resizable = true, 
+        .window_highdpi = true, 
+        .fullscreen_mode = false // Render bug in dev raylib, we cannot use fullscreen yet
+                                 // Our zig bindings for raylib points to latest dev
+    });
 
     var player = try Player.init(alloc);
     var foodGen = try FoodGen.init(alloc);
     defer player.deInit();
-
-    // Timing vars
-    const moveRateInSeconds = 0.2; 
-    var nextMoveTime = rl.getTime() + moveRateInSeconds;
 
     rl.initWindow(global.screenWidth, global.screenHeight, "Raylib");
     defer rl.closeWindow();
@@ -33,14 +35,13 @@ pub fn main() !void {
         handleInput(&player);
 
         // Logic
-        if (rl.getTime() > nextMoveTime) {
+        if (player.shouldMove()) {
             switch (player.direction) {
                 .down => player.move(Vector2{.y = stepSize, .x = 0}),
                 .up => player.move(Vector2{.y = -stepSize, .x = 0}),
                 .right => player.move(Vector2{.x = stepSize, .y = 0}),
                 .left => player.move(Vector2{.x = -stepSize, .y = 0})
             }
-            nextMoveTime = rl.getTime() + moveRateInSeconds;
         }
 
         if(foodGen.shouldGenFood()) {
@@ -57,8 +58,6 @@ pub fn main() !void {
 
         player.draw();
         foodGen.draw();
-
-        // rl.drawRectangleV(player.body[0].position, partSize, .lime);
     }
 }
 

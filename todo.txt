@@ -1,2 +1,6 @@
 * Wrap snake around screen DONE
-* Make food of map
+* Make food of map DONE
+* Move snake speed variables into snake struct DONE
+* Detect collsion of food for snake
+  - Remove food in list
+  - Grow snake

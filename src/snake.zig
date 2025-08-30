@@ -12,17 +12,32 @@ pub const Part = struct {
 pub const Player = struct {
     direction: Direction = .right,
     bodyAlloc: ArrayList(Part),
+    moveRateInSeconds: f64 = 0.2,
+    nextMoveTime: f64 = undefined,
 
     pub fn init(allocator: std.mem.Allocator) !Player {
         var body = ArrayList(Part).init(allocator);
         try initBody(&body);
-        return Player {
+        var player = Player {
             .bodyAlloc = body
         };
+
+        player.nextMoveTime = rl.getTime() + player.moveRateInSeconds;
+
+        return player;
     }
 
     pub fn deInit(self: *Player) void {
         self.bodyAlloc.deinit();
+    }
+
+    pub fn shouldMove(self: *Player) bool {
+        if(rl.getTime() > self.nextMoveTime) {
+            self.nextMoveTime += self.moveRateInSeconds;
+            return true;
+        }
+
+        return false;
     }
 
     pub fn move(self: *Player, velocity: Vector2) void {
