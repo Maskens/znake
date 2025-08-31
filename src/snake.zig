@@ -13,12 +13,16 @@ pub const Player = struct {
     moveRateInSeconds: f32 = 0.15,
     nextMoveTime: f32 = undefined,
 
-    pub fn init(allocator: std.mem.Allocator) !Player {
+    pub fn init(
+        allocator: std.mem.Allocator,
+        startPos: Vector2,
+        length: u8
+    ) !Player {
         var player = Player {
             .bodyAlloc = ArrayList(Vector2).init(allocator)
         };
 
-        try initBody(&player);
+        try initBody(startPos, length, &player);
 
         player.nextMoveTime = @as(f32, @floatCast(rl.getTime())) + player.moveRateInSeconds;
 
@@ -29,11 +33,12 @@ pub const Player = struct {
         self.bodyAlloc.deinit();
     }
 
-    pub fn reset(self: *Player) !void {
+    pub fn reset(self: *Player, startPos: Vector2, length: u8) !void {
         self.currentDirection = .right;
         self.nextMoveDirection = .right;
+        self.nextMoveTime = @as(f32, @floatCast(rl.getTime())) + self.moveRateInSeconds;
         self.bodyAlloc.clearRetainingCapacity();
-        try initBody(self);
+        try initBody(startPos, length, self);
     }
 
     pub fn tryChangeDirection(self: *Player, newDirection: Direction) void {
@@ -130,19 +135,10 @@ pub const Player = struct {
 
         var collision = false;
         for (objects, 0..) |item, index| {
-            if (rl.checkCollisionRecs(
-                    rl.Rectangle {
-                        .x = item.x,
-                        .y = item.y,
-                        .width = global.gridSize,
-                        .height = global.gridSize
-                    },
-                    rl.Rectangle {
-                        .x = head.x,
-                        .y = head.y,
-                        .width = global.gridSize,
-                        .height = global.gridSize
-                    }
+            if (global.checkCollision(
+                    item,
+                    head,
+                    global.gridSize
             )) {
                 collision = true;
                 return index;
@@ -153,30 +149,16 @@ pub const Player = struct {
     }
 };
 
-fn initBody(player: *Player) !void {
+fn initBody(start: Vector2, length: u8, player: *Player) !void {
     var body = &player.bodyAlloc;
-    try body.append(
-        Vector2 {
-            .x = global.gridSize,
-            .y = global.gridSize
-        }
-    );
-    try body.append(
-        Vector2 {
-            .x = global.gridSize * 2,
-            .y = global.gridSize
-        }
-    );
-    try body.append(
-        Vector2 {
-            .x = global.gridSize * 3,
-            .y = global.gridSize
-        }
-    );
-    try body.append(
-        Vector2 {
-            .x = global.gridSize * 4,
-            .y = global.gridSize
-        }
-    );
+
+    for (0..length) |i| {
+        const iFloat = @as(f32, @floatFromInt(i));
+        try body.append(
+            Vector2 {
+                .x = start.x + @as(f32, @floatCast(global.gridSize * iFloat)),
+                .y = start.y 
+            }
+        );
+    }
 }

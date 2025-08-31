@@ -9,6 +9,19 @@ const Vector2 = rl.Vector2;
 const std = @import("std");
 const lib = @import("mange_lib");
 
+const State = enum {
+    playing,
+    dead,
+    restart,
+    quit
+};
+
+const GameState = struct {
+    player: Player,
+    foodGen: FoodGen,
+    state: State
+};
+
 pub fn main() !void {
     const alloc: std.mem.Allocator = std.heap.page_allocator;
 
@@ -24,52 +37,92 @@ pub fn main() !void {
 
     rl.setTargetFPS(60);
 
-    var playerDead = false;
-    var player = try Player.init(alloc);
-    var foodGen = try FoodGen.init(alloc);
-    defer player.deInit();
+    var gameState = GameState {
+        .player = try Player.init(alloc, Vector2 { .x = 32, .y = 32 }, 8),
+        .foodGen = try FoodGen.init(alloc),
+        .state = State.playing
+    };
+    
+    defer gameState.player.deInit();
+    defer gameState.foodGen.foodList.deinit();
 
-    while(!rl.windowShouldClose()) {
-        if (playerDead) {
-            try player.reset();
-            playerDead = false;
+    var quitGame = false;
+
+    while(!rl.windowShouldClose() and !quitGame) {
+        var player = &gameState.player;
+        var foodGen = &gameState.foodGen;
+
+        if (rl.isKeyPressed(rl.KeyboardKey.r)) {
+            gameState.state = .restart;
+        }
+
+        if (rl.isKeyPressed(rl.KeyboardKey.q)) {
+            gameState.state = .quit;
         }
 
         // Input
-        handleInput(&player);
+        handleInput(player);
 
-        // Logic
-        if (player.shouldMove()) {
-            player.move();
+        switch (gameState.state) {
+            .playing => {
+                // Logic
+                if (player.shouldMove()) {
+                    player.move();
+                }
+
+                if(foodGen.shouldGenFood()) {
+                    try foodGen.generateFood(gameState.player.bodyAlloc.items);
+                }
+
+                if(player.checkCollision(foodGen.foodList.items)) |index| {
+                    _ = foodGen.foodList.orderedRemove(index);
+                    player.shouldGrow = true;
+                }
+
+                if(player.checkCollision(
+                        player.bodyAlloc.items[0..player.bodyAlloc.items.len-1])
+                ) |_| {
+                    gameState.state = .dead;
+                }
+
+            },
+            .dead => {
+            },
+            .restart => {
+                try player.reset(Vector2 {.x = 16, .y = 16}, 8);
+                foodGen.foodList.clearRetainingCapacity();
+                gameState.state = .playing;
+            },
+            .quit => {
+                quitGame = true;
+            }
         }
 
-        if(foodGen.shouldGenFood()) {
-            try foodGen.generateFood(player.bodyAlloc.items);
-        }
-
-        if(player.checkCollision(foodGen.foodList.items)) |index| {
-            _ = foodGen.foodList.orderedRemove(index);
-            player.shouldGrow = true;
-        }
-
-        if(player.checkCollision(
-                player.bodyAlloc.items[0..player.bodyAlloc.items.len-1])
-        ) |index| {
-            std.debug.print("Player collision at {}! U died...", .{index});
-            playerDead = true;
-        }
-
-        // Drawing
-        rl.beginDrawing();
-        defer rl.endDrawing();
-
-        rl.clearBackground(.black);
-
-        rl.drawText("Snake!", global.screenWidth / 3, global.screenHeight / 2, 20, .white);
-
-        player.draw();
-        foodGen.draw();
+        draw(&gameState);
     }
+}
+
+fn draw(gameState: *GameState) void {
+    // Drawing
+    rl.beginDrawing();
+    defer rl.endDrawing();
+    rl.clearBackground(.black);
+
+    switch (gameState.state) {
+        .playing => {
+            gameState.player.draw();
+            gameState.foodGen.draw();
+            rl.drawText("Snake!", global.screenWidth / 3, global.screenHeight / 2, 20, .white);
+        },
+        .dead => {
+            gameState.player.draw();
+            gameState.foodGen.draw();
+            rl.drawText("Dead! Press R to restart!", global.screenWidth / 3, global.screenHeight / 2, 20, .white);
+        },
+        else => {}
+    }
+
+    return;
 }
 
 fn handleInput(player: *Player) void {
