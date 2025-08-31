@@ -49,7 +49,7 @@ pub fn main() !void {
         if(player.checkCollision(
                 player.bodyAlloc.items[0..player.bodyAlloc.items.len-1])
         ) |index| {
-            std.debug.print("Player collision at {}", .{index});
+            std.debug.print("Player collision at {}! U died...", .{index});
         }
 
         // Drawing
