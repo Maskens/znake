@@ -41,9 +41,15 @@ pub fn main() !void {
             try foodGen.generateFood();
         }
 
-        if(player.checkCollision(&foodGen.foodList)) |index| {
+        if(player.checkCollision(foodGen.foodList.allocatedSlice())) |index| {
             _ = foodGen.foodList.orderedRemove(index);
             player.shouldGrow = true;
+        }
+
+        if(player.checkCollision(
+                player.bodyAlloc.items[0..player.bodyAlloc.items.len-1])
+        ) |index| {
+            std.debug.print("Player collision at {}", .{index});
         }
 
         // Drawing

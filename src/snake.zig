@@ -118,11 +118,12 @@ pub const Player = struct {
 
     // Check for player collision on the list of objects, returns index 
     // for the object collided with or null
-    pub fn checkCollision(self: *Player, arrayList: *ArrayList(Vector2)) ?usize {
+    // Todo: We dont need array list here just a slice of vector2 objects to check
+    pub fn checkCollision(self: *Player, objects: []Vector2) ?usize {
         const head = self.bodyAlloc.getLast();
 
         var collision = false;
-        for (arrayList.items, 0..) |item, index| {
+        for (objects, 0..) |item, index| {
             if (rl.checkCollisionRecs(
                     rl.Rectangle {
                         .x = item.x,
