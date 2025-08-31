@@ -10,7 +10,7 @@ pub const Player = struct {
     nextMoveDirection: Direction = .right,
     bodyAlloc: ArrayList(Vector2),
     shouldGrow: bool = false,
-    moveRateInSeconds: f32 = 0.2,
+    moveRateInSeconds: f32 = 0.15,
     nextMoveTime: f32 = undefined,
 
     pub fn init(allocator: std.mem.Allocator) !Player {

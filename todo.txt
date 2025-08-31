@@ -1,7 +1,6 @@
-* Fix bug where food is on the edge and player grows outside the edge! Player dies not wich is wrong!
-
 * Add game over screen, and restart game
 
+* Fix bug where food is on the edge and player grows outside the edge! Player dies not wich is wrong! DONE
 * When generating food, dont add on snake and dont add on existing food DONE
 * Add dead state of player! DONE
 * Add self collisions DONE
