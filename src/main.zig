@@ -98,11 +98,11 @@ pub fn main() !void {
             }
         }
 
-        draw(&gameState);
+        try draw(&gameState);
     }
 }
 
-fn draw(gameState: *GameState) void {
+fn draw(gameState: *GameState) !void {
     // Drawing
     rl.beginDrawing();
     defer rl.endDrawing();
@@ -121,6 +121,14 @@ fn draw(gameState: *GameState) void {
         },
         else => {}
     }
+
+    var screenWidthText = [_:0]u8{ 0 } ** 100;
+    _ = try std.fmt.bufPrint(&screenWidthText, "Screen width: {}", .{rl.getScreenWidth()});
+    rl.drawText(&screenWidthText, 10, 10, 20, .white);
+
+    var screenHeightText = [_:0]u8{ 0 } ** 100;
+    _ = try std.fmt.bufPrint(&screenHeightText, "Screen height: {}", .{rl.getScreenHeight()});
+    rl.drawText(&screenHeightText, 10, 40, 20, .white);
 
     return;
 }

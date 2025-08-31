@@ -1,5 +1,7 @@
-* Add game over screen, and restart game
+- Make the game work in mac full screen. 
+  - Get window size values
 
+* Add game over screen, and restart game DONE
 * Fix bug where food is on the edge and player grows outside the edge! Player dies not wich is wrong! DONE
 * When generating food, dont add on snake and dont add on existing food DONE
 * Add dead state of player! DONE
