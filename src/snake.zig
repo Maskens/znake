@@ -10,23 +10,30 @@ pub const Player = struct {
     nextMoveDirection: Direction = .right,
     bodyAlloc: ArrayList(Vector2),
     shouldGrow: bool = false,
-    moveRateInSeconds: f64 = 0.2,
-    nextMoveTime: f64 = undefined,
+    moveRateInSeconds: f32 = 0.2,
+    nextMoveTime: f32 = undefined,
 
     pub fn init(allocator: std.mem.Allocator) !Player {
-        var body = ArrayList(Vector2).init(allocator);
-        try initBody(&body);
         var player = Player {
-            .bodyAlloc = body
+            .bodyAlloc = ArrayList(Vector2).init(allocator)
         };
 
-        player.nextMoveTime = rl.getTime() + player.moveRateInSeconds;
+        try initBody(&player);
+
+        player.nextMoveTime = @as(f32, @floatCast(rl.getTime())) + player.moveRateInSeconds;
 
         return player;
     }
 
     pub fn deInit(self: *Player) void {
         self.bodyAlloc.deinit();
+    }
+
+    pub fn reset(self: *Player) !void {
+        self.currentDirection = .right;
+        self.nextMoveDirection = .right;
+        self.bodyAlloc.clearRetainingCapacity();
+        try initBody(self);
     }
 
     pub fn tryChangeDirection(self: *Player, newDirection: Direction) void {
@@ -118,7 +125,6 @@ pub const Player = struct {
 
     // Check for player collision on the list of objects, returns index 
     // for the object collided with or null
-    // Todo: We dont need array list here just a slice of vector2 objects to check
     pub fn checkCollision(self: *Player, objects: []Vector2) ?usize {
         const head = self.bodyAlloc.getLast();
 
@@ -147,7 +153,8 @@ pub const Player = struct {
     }
 };
 
-fn initBody(body: *ArrayList(Vector2)) !void {
+fn initBody(player: *Player) !void {
+    var body = &player.bodyAlloc;
     try body.append(
         Vector2 {
             .x = global.gridSize,

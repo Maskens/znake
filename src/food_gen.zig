@@ -5,13 +5,9 @@ const ArrayList = std.ArrayList;
 const global = @import("global.zig");
 const math = @import("std").math;
 
-// test "apa" {
-//
-//     try std.testing.expectEqual(math.divFloor(f32, 66.4, 16), 4);
-// }
-
 pub const FoodGen = struct {
     foodList: ArrayList(Vector2),
+    maxFoods: u8 = 10,
     timeToNextFoodInSeconds: f64 = 0,
     foodRateInSeconds: f64 = 3,
 
@@ -26,6 +22,10 @@ pub const FoodGen = struct {
     }
 
     pub fn shouldGenFood(self: *FoodGen) bool {
+        if (self.foodList.items.len > self.maxFoods) {
+            return false;
+        }
+
         if (rl.getTime() > self.timeToNextFoodInSeconds) {
             return true;
         }
@@ -34,22 +34,47 @@ pub const FoodGen = struct {
     }
 
     // Generate food and add to list
-    pub fn generateFood(self: *FoodGen) !void {
-        var x: f32 = @floatFromInt(global.getRandomInt(global.screenWidth));
-        var y: f32 = @floatFromInt(global.getRandomInt(global.screenHeight));
+    pub fn generateFood(self: *FoodGen, playerBody: []Vector2) !void {
+        var pos: ?Vector2 = null;
 
-        const gridSize: f32 = @floatFromInt(global.gridSize);
+        while(pos == null) {
+            var x: f32 = @floatFromInt(global.getRandomInt(global.screenWidth));
+            var y: f32 = @floatFromInt(global.getRandomInt(global.screenHeight));
 
-        // snap to grid
-        x = try math.divFloor(f32, x, gridSize) * gridSize;
-        y = try math.divFloor(f32, y, gridSize) * gridSize;
+            const gridSize: f32 = @floatFromInt(global.gridSize);
 
-        try self.foodList.append(
-            Vector2{
-                .x = x,
-                .y = y 
+            // snap to grid
+            x = try math.divFloor(f32, x, gridSize) * gridSize;
+            y = try math.divFloor(f32, y, gridSize) * gridSize;
+
+            // Check for existing food at that location
+            for (self.foodList.items) |food| {
+                if (global.checkCollision(food, Vector2 {.x = x, .y = y }, global.gridSize)) {
+                    continue;
+                }
             }
-        );
+
+            // Check for player position
+            for (playerBody) |item| {
+                if (global.checkCollision(item, Vector2 {.x = x, .y = y }, global.gridSize)) {
+                    continue;
+                }
+            }
+
+            pos = Vector2 {
+                .x = x,
+                .y = y
+            };
+        }
+
+        if (pos) |value| {
+            try self.foodList.append(
+                Vector2{
+                    .x = value.x,
+                    .y = value.y 
+                }
+            );
+        }
 
         self.timeToNextFoodInSeconds += self.foodRateInSeconds;
     }
@@ -59,7 +84,4 @@ pub const FoodGen = struct {
             rl.drawRectangleV(food, Vector2{.x = 16, .y = 16}, .green);
         }
     }
-    
-    // Check food collision
-    // Remove food and return true
 };

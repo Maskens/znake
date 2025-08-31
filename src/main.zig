@@ -19,16 +19,22 @@ pub fn main() !void {
                                  // Our zig bindings for raylib points to latest dev
     });
 
-    var player = try Player.init(alloc);
-    var foodGen = try FoodGen.init(alloc);
-    defer player.deInit();
-
     rl.initWindow(global.screenWidth, global.screenHeight, "Raylib");
     defer rl.closeWindow();
 
     rl.setTargetFPS(60);
 
+    var playerDead = false;
+    var player = try Player.init(alloc);
+    var foodGen = try FoodGen.init(alloc);
+    defer player.deInit();
+
     while(!rl.windowShouldClose()) {
+        if (playerDead) {
+            try player.reset();
+            playerDead = false;
+        }
+
         // Input
         handleInput(&player);
 
@@ -38,10 +44,10 @@ pub fn main() !void {
         }
 
         if(foodGen.shouldGenFood()) {
-            try foodGen.generateFood();
+            try foodGen.generateFood(player.bodyAlloc.items);
         }
 
-        if(player.checkCollision(foodGen.foodList.allocatedSlice())) |index| {
+        if(player.checkCollision(foodGen.foodList.items)) |index| {
             _ = foodGen.foodList.orderedRemove(index);
             player.shouldGrow = true;
         }
@@ -50,6 +56,7 @@ pub fn main() !void {
                 player.bodyAlloc.items[0..player.bodyAlloc.items.len-1])
         ) |index| {
             std.debug.print("Player collision at {}! U died...", .{index});
+            playerDead = true;
         }
 
         // Drawing
@@ -58,7 +65,7 @@ pub fn main() !void {
 
         rl.clearBackground(.black);
 
-        rl.drawText("Snake?!", global.screenWidth / 3, global.screenHeight / 2, 20, .white);
+        rl.drawText("Snake!", global.screenWidth / 3, global.screenHeight / 2, 20, .white);
 
         player.draw();
         foodGen.draw();
@@ -66,6 +73,23 @@ pub fn main() !void {
 }
 
 fn handleInput(player: *Player) void {
+    if (rl.isKeyPressed(rl.KeyboardKey.two)) {
+        // Cap to something above zero move rate
+        player.moveRateInSeconds -= 0.05;
+    }
+
+    if (rl.isKeyPressed(rl.KeyboardKey.one)) {
+        // Cap to something above zero move rate
+        player.moveRateInSeconds += 0.05;
+    }
+
+    player.moveRateInSeconds = rl.math.clamp(
+        player.moveRateInSeconds, 
+        0.05, 
+        2
+    );
+
+    // Player movement
     var direction: ?Direction = null;
 
     if (rl.isKeyDown(rl.KeyboardKey.a)) {
