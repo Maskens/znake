@@ -71,7 +71,7 @@ pub const Player = struct {
         };
 
         if (self.shouldGrow) {
-            // We just make add a new body part instead of moving all other parts
+            // We just make add a new head part instead of moving all other parts
             const currentHead = self.bodyAlloc.getLast();
             self.bodyAlloc.append(
                 Vector2 {
@@ -80,23 +80,23 @@ pub const Player = struct {
                 }
             ) catch unreachable;
             self.shouldGrow = false;
-
-            return;
+        } else {
+            // Else we move all the body parts
+            for (self.bodyAlloc.items, 0..) |*part, i| {
+                if (i == self.bodyAlloc.items.len - 1) {
+                    const newHeadPos = part.add(velocity);
+                    part.x = newHeadPos.x;
+                    part.y = newHeadPos.y;
+                } else {
+                    const nextPart = self.bodyAlloc.items[i + 1];
+                    part.x = nextPart.x;
+                    part.y = nextPart.y;
+                }
+            }
         }
 
-        // Else we move all the body parts
-        for (self.bodyAlloc.items, 0..) |*part, i| {
-            if (i == self.bodyAlloc.items.len - 1) {
-                const newHeadPos = part.add(velocity);
-                part.x = newHeadPos.x;
-                part.y = newHeadPos.y;
-            } else {
-                const nextPart = self.bodyAlloc.items[i + 1];
-                part.x = nextPart.x;
-                part.y = nextPart.y;
-            }
-
-            // Wrap player around screen 
+        // Wrap any part around screen 
+        for (self.bodyAlloc.items) |*part| {
             if (part.x < 0) {
                 part.x = global.screenWidth;
             }
