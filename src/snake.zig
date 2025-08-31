@@ -12,6 +12,7 @@ pub const Part = struct {
 pub const Player = struct {
     direction: Direction = .right,
     bodyAlloc: ArrayList(Part),
+    shouldGrow: bool = false,
     moveRateInSeconds: f64 = 0.2,
     nextMoveTime: f64 = undefined,
 
@@ -42,11 +43,28 @@ pub const Player = struct {
 
     pub fn move(self: *Player, velocity: Vector2) void {
 
+        if (self.shouldGrow) {
+            // We just make add a new body part instead of moving all other parts
+            const currentHead = self.bodyAlloc.getLast();
+            self.bodyAlloc.append(
+                Part {
+                    .position = Vector2 {
+                        .x = currentHead.position.x + velocity.x,
+                        .y = currentHead.position.y + velocity.y
+                    }
+                }
+            ) catch unreachable;
+            self.shouldGrow = false;
+
+            return;
+        }
+
+        // Else we move all the body parts
+
         for (self.bodyAlloc.items, 0..) |*part, i| {
             if (i == self.bodyAlloc.items.len - 1) {
                 part.position = part.position.add(velocity); // head
             } else {
-
                 part.position = self.bodyAlloc.items[i + 1].position;
             }
 
@@ -74,6 +92,36 @@ pub const Player = struct {
                 Vector2 {.x = global.gridSize, .y = global.gridSize}, 
                 .lime
             );
+        }
+    }
+
+    pub fn handleFoodCol(self: *Player, foods: *ArrayList(Vector2)) void {
+        const head = self.bodyAlloc.getLast();
+
+        var collision = false;
+        for (foods.items, 0..) |food, index| {
+            if (rl.checkCollisionRecs(
+                    rl.Rectangle {
+                        .x = food.x,
+                        .y = food.y,
+                        .width = global.gridSize,
+                        .height = global.gridSize
+                    },
+                    rl.Rectangle {
+                        .x = head.position.x,
+                        .y = head.position.y,
+                        .width = global.gridSize,
+                        .height = global.gridSize
+                    }
+            )) {
+                collision = true;
+                _ = foods.orderedRemove(index);
+                break;
+            }
+        }
+
+        if (collision) {
+            self.shouldGrow = true;
         }
     }
 };

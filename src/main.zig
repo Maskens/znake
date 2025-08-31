@@ -48,6 +48,8 @@ pub fn main() !void {
             try foodGen.generateFood();
         }
 
+        player.handleFoodCol(&foodGen.foodList);
+
         // Drawing
         rl.beginDrawing();
         defer rl.endDrawing();
