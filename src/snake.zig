@@ -10,7 +10,8 @@ pub const Part = struct {
 };
 
 pub const Player = struct {
-    direction: Direction = .right,
+    currentDirection: Direction = .right,
+    nextMoveDirection: Direction = .right,
     bodyAlloc: ArrayList(Part),
     shouldGrow: bool = false,
     moveRateInSeconds: f64 = 0.2,
@@ -32,6 +33,21 @@ pub const Player = struct {
         self.bodyAlloc.deinit();
     }
 
+    pub fn tryChangeDirection(self: *Player, newDirection: Direction) void {
+        if (newDirection == Direction.up and self.currentDirection != Direction.down) {
+            self.nextMoveDirection = newDirection;
+        }
+        if (newDirection == Direction.down and self.currentDirection != Direction.up) {
+            self.nextMoveDirection = newDirection;
+        }
+        if (newDirection == Direction.left and self.currentDirection != Direction.right) {
+            self.nextMoveDirection = newDirection;
+        }
+        if (newDirection == Direction.right and self.currentDirection != Direction.left) {
+            self.nextMoveDirection = newDirection;
+        }
+    }
+
     pub fn shouldMove(self: *Player) bool {
         if(rl.getTime() > self.nextMoveTime) {
             self.nextMoveTime += self.moveRateInSeconds;
@@ -41,7 +57,15 @@ pub const Player = struct {
         return false;
     }
 
-    pub fn move(self: *Player, velocity: Vector2) void {
+    pub fn move(self: *Player) void {
+        self.currentDirection = self.nextMoveDirection;
+
+        const velocity = switch (self.currentDirection) {
+            .down => Vector2{.y = global.gridSize, .x = 0},
+            .up => Vector2{.y = -global.gridSize, .x = 0},
+            .right => Vector2{.x = global.gridSize, .y = 0},
+            .left => Vector2{.x = -global.gridSize, .y = 0}
+        };
 
         if (self.shouldGrow) {
             // We just make add a new body part instead of moving all other parts
@@ -60,7 +84,6 @@ pub const Player = struct {
         }
 
         // Else we move all the body parts
-
         for (self.bodyAlloc.items, 0..) |*part, i| {
             if (i == self.bodyAlloc.items.len - 1) {
                 part.position = part.position.add(velocity); // head
@@ -95,15 +118,17 @@ pub const Player = struct {
         }
     }
 
-    pub fn handleFoodCol(self: *Player, foods: *ArrayList(Vector2)) void {
+    // Check for player collision on the list of objects, returns index 
+    // for the object collided with or null
+    pub fn checkCollision(self: *Player, arrayList: *ArrayList(Vector2)) ?usize {
         const head = self.bodyAlloc.getLast();
 
         var collision = false;
-        for (foods.items, 0..) |food, index| {
+        for (arrayList.items, 0..) |item, index| {
             if (rl.checkCollisionRecs(
                     rl.Rectangle {
-                        .x = food.x,
-                        .y = food.y,
+                        .x = item.x,
+                        .y = item.y,
                         .width = global.gridSize,
                         .height = global.gridSize
                     },
@@ -115,14 +140,11 @@ pub const Player = struct {
                     }
             )) {
                 collision = true;
-                _ = foods.orderedRemove(index);
-                break;
+                return index;
             }
         }
 
-        if (collision) {
-            self.shouldGrow = true;
-        }
+        return null;
     }
 };
 

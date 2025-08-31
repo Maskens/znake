@@ -1,6 +1,10 @@
+* Add self collisions
+* Add game over screen, and restart game
+
+* Fix bug where player can move opposite direction DONE
 * Wrap snake around screen DONE
 * Make food of map DONE
 * Move snake speed variables into snake struct DONE
-* Detect collsion of food for snake
+* Detect collsion of food for snake DONE
   - Remove food in list
   - Grow snake

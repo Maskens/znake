@@ -28,27 +28,23 @@ pub fn main() !void {
 
     rl.setTargetFPS(60);
 
-    const stepSize = global.gridSize;
-
     while(!rl.windowShouldClose()) {
         // Input
         handleInput(&player);
 
         // Logic
         if (player.shouldMove()) {
-            switch (player.direction) {
-                .down => player.move(Vector2{.y = stepSize, .x = 0}),
-                .up => player.move(Vector2{.y = -stepSize, .x = 0}),
-                .right => player.move(Vector2{.x = stepSize, .y = 0}),
-                .left => player.move(Vector2{.x = -stepSize, .y = 0})
-            }
+            player.move();
         }
 
         if(foodGen.shouldGenFood()) {
             try foodGen.generateFood();
         }
 
-        player.handleFoodCol(&foodGen.foodList);
+        if(player.checkCollision(&foodGen.foodList)) |index| {
+            _ = foodGen.foodList.orderedRemove(index);
+            player.shouldGrow = true;
+        }
 
         // Drawing
         rl.beginDrawing();
@@ -64,33 +60,26 @@ pub fn main() !void {
 }
 
 fn handleInput(player: *Player) void {
-        // Handling input
-        if (rl.isKeyDown(rl.KeyboardKey.a)) {
-            if (player.direction != Direction.right) {
-                player.direction = Direction.left;
-            }
-            return;
-        }
+    var direction: ?Direction = null;
 
-        if (rl.isKeyDown(rl.KeyboardKey.d)) {
-            if (player.direction != Direction.left) {
-                player.direction = Direction.right;
-            }
-            return;
-        }
+    if (rl.isKeyDown(rl.KeyboardKey.a)) {
+        direction = Direction.left;
+    }
 
-        if (rl.isKeyDown(rl.KeyboardKey.w)) {
-            if (player.direction != Direction.down) {
-                player.direction = Direction.up;
-            }
-            return;
-        }
+    if (rl.isKeyDown(rl.KeyboardKey.d)) {
+        direction = Direction.right;
+    }
 
-        if (rl.isKeyDown(rl.KeyboardKey.s)) {
-            if (player.direction != Direction.up) {
-                player.direction = Direction.down;
-            }
-            return;
-        }
+    if (rl.isKeyDown(rl.KeyboardKey.w)) {
+        direction = Direction.up;
+    }
+
+    if (rl.isKeyDown(rl.KeyboardKey.s)) {
+        direction = Direction.down;
+    }
+
+    if (direction) |value| {
+        player.tryChangeDirection(value);
+    }
 }
 
